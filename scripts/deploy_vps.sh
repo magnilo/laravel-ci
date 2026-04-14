@@ -8,6 +8,9 @@ PHP_BIN="${PHP_BIN:-php}"
 COMPOSER_BIN="${COMPOSER_BIN:-composer}"
 NPM_BIN="${NPM_BIN:-npm}"
 RUN_MIGRATIONS="${RUN_MIGRATIONS:-false}"
+WRITABLE_USER="${WRITABLE_USER:-www-data}"
+WRITABLE_GROUP="${WRITABLE_GROUP:-www-data}"
+USE_SUDO_FOR_CHOWN="${USE_SUDO_FOR_CHOWN:-false}"
 
 echo "[deploy] path=${DEPLOY_PATH} ref=${DEPLOY_REF}"
 
@@ -48,12 +51,33 @@ ${COMPOSER_BIN} install --no-interaction --prefer-dist --optimize-autoloader --n
 ${NPM_BIN} ci
 ${NPM_BIN} run production
 
-mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
-chmod -R ug+rwx storage bootstrap/cache || true
+# Resolve potential symlink layout (current -> releases/<timestamp>) and shared storage layout.
+CURRENT_PATH="$(pwd -P)"
+PARENT_DIR="$(dirname "${CURRENT_PATH}")"
+SHARED_STORAGE_PATH="${PARENT_DIR}/shared/storage"
+
+if [ -d "${SHARED_STORAGE_PATH}" ]; then
+    STORAGE_PATH="${SHARED_STORAGE_PATH}"
+else
+    STORAGE_PATH="${CURRENT_PATH}/storage"
+fi
+
+mkdir -p "${STORAGE_PATH}/framework/cache" \
+         "${STORAGE_PATH}/framework/sessions" \
+         "${STORAGE_PATH}/framework/views" \
+         "${STORAGE_PATH}/logs" \
+         "${CURRENT_PATH}/bootstrap/cache"
+
+touch "${STORAGE_PATH}/logs/laravel.log" || true
+
+chmod -R ug+rwx "${STORAGE_PATH}" "${CURRENT_PATH}/bootstrap/cache" || true
 
 if command -v chown >/dev/null 2>&1; then
-    # Best effort ownership update for common nginx/apache user.
-    chown -R www-data:www-data storage bootstrap/cache || true
+    if [ "${USE_SUDO_FOR_CHOWN}" = "true" ] && command -v sudo >/dev/null 2>&1; then
+        sudo chown -R "${WRITABLE_USER}:${WRITABLE_GROUP}" "${STORAGE_PATH}" "${CURRENT_PATH}/bootstrap/cache" || true
+    else
+        chown -R "${WRITABLE_USER}:${WRITABLE_GROUP}" "${STORAGE_PATH}" "${CURRENT_PATH}/bootstrap/cache" || true
+    fi
 fi
 
 if [ "${RUN_MIGRATIONS}" = "true" ]; then

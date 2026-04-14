@@ -143,6 +143,11 @@ If your VPS shows a 500 page, run these commands on the server and check output:
 	sudo chown -R www-data:www-data storage bootstrap/cache
 	sudo chmod -R ug+rwx storage bootstrap/cache
 
+	If your deployment uses current -> releases/<timestamp> with shared storage, run:
+
+	sudo chown -R www-data:www-data /var/www/laravel-ci/shared/storage /var/www/laravel-ci/current/bootstrap/cache
+	sudo chmod -R ug+rwx /var/www/laravel-ci/shared/storage /var/www/laravel-ci/current/bootstrap/cache
+
 5. Rebuild caches:
 
 	php artisan optimize:clear
