@@ -1,27 +1,35 @@
-image: docker:latest
+image: docker:24
 
 services:
-  - docker:dind
+  - name: docker:24-dind
+    command: ["--tls=false"]
+
+variables:
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
+  IMAGE_NAME: laravel-ci-app
 
 stages:
   - test
   - deploy
 
-variables:
-  DOCKER_TLS_CERTDIR: ""
-  IMAGE_NAME: laravel-ci-app
-
 before_script:
   - echo "Starting CI pipeline..."
+  - docker info
 
 test:
   stage: test
+  tags:
+    - docker
   script:
     - docker build -t $IMAGE_NAME .
     - docker run --rm $IMAGE_NAME php -v
 
 deploy:
   stage: deploy
+  tags:
+    - docker
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
