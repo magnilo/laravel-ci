@@ -1,0 +1,29 @@
+image: docker:latest
+
+services:
+  - docker:dind
+
+stages:
+  - test
+  - deploy
+
+variables:
+  DOCKER_TLS_CERTDIR: ""
+  IMAGE_NAME: laravel-ci-app
+
+before_script:
+  - echo "Starting CI pipeline..."
+
+test:
+  stage: test
+  script:
+    - docker build -t $IMAGE_NAME .
+    - docker run --rm $IMAGE_NAME php -v
+
+deploy:
+  stage: deploy
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - echo "Deploy stage placeholder"
+    - echo "Use Envoy or rsync from here"
