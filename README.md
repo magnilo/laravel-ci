@@ -115,7 +115,47 @@ The script [scripts/deploy_vps.sh](scripts/deploy_vps.sh) will:
 4. Run migrations (`php artisan migrate --force`)
 5. Rebuild Laravel caches
 
+Note:
+
+- By default migrations are skipped to avoid failure when database is not configured yet.
+- To run migrations during deploy, set `RUN_MIGRATIONS=true` in the SSH command environment.
+
 GitHub deploy runs automatically on push to `main` after tests pass. GitLab deploy is manual on `main` for safer release control.
+
+## Quick Fix for VPS 500 Error
+
+If your VPS shows a 500 page, run these commands on the server and check output:
+
+1. Move to app directory:
+
+	cd /var/www/laravel-ci/current
+
+2. Check Laravel log:
+
+	tail -n 150 storage/logs/laravel.log
+
+3. Check APP_KEY in environment:
+
+	grep -E '^APP_KEY=' .env
+
+4. Fix permissions for Laravel runtime directories:
+
+	sudo chown -R www-data:www-data storage bootstrap/cache
+	sudo chmod -R ug+rwx storage bootstrap/cache
+
+5. Rebuild caches:
+
+	php artisan optimize:clear
+	php artisan config:cache
+	php artisan route:cache
+	php artisan view:cache
+
+6. Reload services:
+
+	sudo systemctl reload php8.4-fpm
+	sudo systemctl reload nginx
+
+If still failing, send the latest 40 lines from storage/logs/laravel.log and we can pinpoint the exact cause.
 
 ## Pages
 

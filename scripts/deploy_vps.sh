@@ -7,6 +7,7 @@ DEPLOY_REF="${DEPLOY_REF:-main}"
 PHP_BIN="${PHP_BIN:-php}"
 COMPOSER_BIN="${COMPOSER_BIN:-composer}"
 NPM_BIN="${NPM_BIN:-npm}"
+RUN_MIGRATIONS="${RUN_MIGRATIONS:-false}"
 
 echo "[deploy] path=${DEPLOY_PATH} ref=${DEPLOY_REF}"
 
@@ -27,6 +28,12 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
+APP_KEY_LINE="$(grep -E '^APP_KEY=' .env || true)"
+if [ -z "${APP_KEY_LINE}" ] || [ "${APP_KEY_LINE}" = "APP_KEY=" ]; then
+    echo "[deploy] APP_KEY is missing in .env. Set APP_KEY before deploying." >&2
+    exit 1
+fi
+
 git fetch --prune origin
 
 # Deploy either an explicit commit SHA or a branch name.
@@ -41,7 +48,21 @@ ${COMPOSER_BIN} install --no-interaction --prefer-dist --optimize-autoloader --n
 ${NPM_BIN} ci
 ${NPM_BIN} run production
 
-${PHP_BIN} artisan migrate --force
+mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+chmod -R ug+rwx storage bootstrap/cache || true
+
+if command -v chown >/dev/null 2>&1; then
+    # Best effort ownership update for common nginx/apache user.
+    chown -R www-data:www-data storage bootstrap/cache || true
+fi
+
+if [ "${RUN_MIGRATIONS}" = "true" ]; then
+    ${PHP_BIN} artisan migrate --force
+else
+    echo "[deploy] skipping migrations (RUN_MIGRATIONS=false)"
+fi
+
+${PHP_BIN} artisan storage:link || true
 ${PHP_BIN} artisan optimize:clear
 ${PHP_BIN} artisan config:cache
 ${PHP_BIN} artisan route:cache
