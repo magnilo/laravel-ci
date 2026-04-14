@@ -10,16 +10,16 @@ class PortfolioPagesTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('Kopi Senja')
-            ->assertSee('Portofolio kafe modern');
+            ->assertSee('Portofolio kafe modern')
+            ->assertSee('Siap dipakai untuk profil kafe, promo, atau landing page reservasi');
     }
 
     public function test_menu_page_loads(): void
     {
         $this->get('/menu')
             ->assertOk()
-            ->assertSee('Menu unggulan')
-            ->assertSee('Senja Latte');
+            ->assertSee('Koleksi menu yang mewakili karakter kafe')
+            ->assertSee('Promo dan set menu bisa ditambahkan kapan saja.');
     }
 
     public function test_gallery_page_loads(): void
@@ -27,7 +27,7 @@ class PortfolioPagesTest extends TestCase
         $this->get('/gallery')
             ->assertOk()
             ->assertSee('Galeri')
-            ->assertSee('suasana');
+            ->assertSee('Tunjukkan suasana, bukan hanya produk');
     }
 
     public function test_contact_page_loads(): void
@@ -35,6 +35,6 @@ class PortfolioPagesTest extends TestCase
         $this->get('/contact')
             ->assertOk()
             ->assertSee('Kontak')
-            ->assertSee('Reservasi');
+            ->assertSee('Form reservasi sederhana');
     }
 }
