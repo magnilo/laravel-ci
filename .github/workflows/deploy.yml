@@ -1,33 +1,69 @@
-name: Deploy Laravel with GitHub Actions
+name: CI Laravel Portfolio
 
 on:
+  pull_request:
   push:
     branches:
       - main
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup SSH agent
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, bcmath, exif, pcntl, pdo, pdo_mysql, zip
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Build assets
+        run: npm run production
+
+      - name: Run tests
+        run: php artisan test
+
+  deploy-vps:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
 
-      - name: Add server to known hosts
+      - name: Add known hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+          echo "${{ secrets.VPS_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
-      - name: Deploy with rsync
+      - name: Deploy via SSH
+        env:
+          SSH_USER: ${{ secrets.VPS_SSH_USER }}
+          SSH_HOST: ${{ secrets.VPS_SSH_HOST }}
+          DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
         run: |
-          rsync -avz --delete \
-            --exclude=".git" \
-            --exclude=".github" \
-            --exclude=".env" \
-            --exclude="storage" \
-            ./ deployer@${{ secrets.HOST }}:/var/www/laravel-ci/current
+          ssh "${SSH_USER}@${SSH_HOST}" \
+            "export DEPLOY_PATH='${DEPLOY_PATH}' DEPLOY_REF='${GITHUB_SHA}'; bash -s" < scripts/deploy_vps.sh

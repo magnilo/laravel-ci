@@ -12,6 +12,11 @@ const mix = require('laravel-mix');
  */
 
 mix.js('resources/js/app.js', 'public/js')
-    .postCss('resources/css/app.css', 'public/css', [
-        //
-    ]);
+    .postCss('resources/css/app.css', 'public/css');
+
+// Work around webpack progress plugin incompatibility on newer Node/npm toolchains.
+mix.override((config) => {
+    config.plugins = (config.plugins || []).filter((plugin) => {
+        return plugin && plugin.constructor && plugin.constructor.name !== 'WebpackBar';
+    });
+});

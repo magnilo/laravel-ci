@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-coffee-50 font-body text-coffee-900 antialiased;
+        background-image:
+            radial-gradient(circle at top left, rgba(201, 139, 90, 0.18), transparent 26%),
+            radial-gradient(circle at top right, rgba(67, 48, 42, 0.1), transparent 20%),
+            linear-gradient(180deg, #fffaf6 0%, #f8efe4 38%, #f4e6d7 100%);
+    }
+
+    a {
+        @apply transition duration-200 ease-out;
+    }
+}
+
+@layer components {
+    .section-shell {
+        @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    }
+
+    .section-badge {
+        @apply inline-flex items-center gap-2 rounded-full border border-coffee-200 bg-white/80 px-4 py-2 text-sm font-semibold text-coffee-700 shadow-soft backdrop-blur;
+    }
+
+    .glass-panel {
+        @apply rounded-[2rem] border border-white/70 bg-white/80 shadow-soft backdrop-blur-xl;
+    }
+
+    .coffee-button {
+        @apply inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition duration-200 ease-out;
+    }
+
+    .coffee-button-primary {
+        @apply inline-flex items-center justify-center rounded-full bg-coffee-700 px-5 py-3 text-sm font-semibold text-white shadow-soft transition duration-200 ease-out;
+    }
+
+    .coffee-button-primary:hover {
+        transform: translateY(-2px);
+        background-color: #4e3323;
+    }
+
+    .coffee-button-secondary {
+        @apply inline-flex items-center justify-center rounded-full border border-coffee-200 bg-white/80 px-5 py-3 text-sm font-semibold text-coffee-800 transition duration-200 ease-out;
+    }
+
+    .coffee-button-secondary:hover {
+        transform: translateY(-2px);
+        background-color: rgba(255, 255, 255, 0.96);
+    }
+
+    .hero-gradient {
+        background-image:
+            radial-gradient(circle at top left, rgba(201, 139, 90, 0.25), transparent 30%),
+            radial-gradient(circle at top right, rgba(67, 48, 42, 0.16), transparent 24%),
+            linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 247, 240, 0.72));
+    }
+}

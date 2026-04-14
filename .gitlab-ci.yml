@@ -1,37 +1,51 @@
-image: docker:24
-
-services:
-  - name: docker:24-dind
-    command: ["--tls=false"]
-
-variables:
-  DOCKER_TLS_CERTDIR: ""
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_DRIVER: overlay2
-  IMAGE_NAME: laravel-ci-app
+image: php:8.4-cli
 
 stages:
   - test
+  - build
   - deploy
 
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - vendor/
+    - node_modules/
+
 before_script:
-  - echo "Starting CI pipeline..."
-  - docker info
+  - apt-get update -y
+  - apt-get install -y git unzip zip curl nodejs npm openssh-client libzip-dev libpng-dev libonig-dev libxml2-dev
+  - docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath
+  - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 test:
   stage: test
-  tags:
-    - docker
   script:
-    - docker build -t $IMAGE_NAME .
-    - docker run --rm $IMAGE_NAME php -v
+    - composer install --no-interaction --prefer-dist --optimize-autoloader
+    - npm install
+    - php artisan test
 
-deploy:
+build-assets:
+  stage: build
+  script:
+    - npm install
+    - npm run production
+  artifacts:
+    paths:
+      - public/css/
+      - public/js/
+      - public/mix-manifest.json
+    expire_in: 1 week
+
+deploy-vps:
   stage: deploy
-  tags:
-    - docker
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
   script:
-    - echo "Deploy stage placeholder"
-    - echo "Use Envoy or rsync from here"
+    - eval "$(ssh-agent -s)"
+    - echo "$VPS_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+    - chmod 600 ~/.ssh/known_hosts
+    - ssh "$VPS_SSH_USER@$VPS_SSH_HOST" "export DEPLOY_PATH='$VPS_DEPLOY_PATH' DEPLOY_REF='$CI_COMMIT_SHA'; bash -s" < scripts/deploy_vps.sh
