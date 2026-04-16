@@ -16,7 +16,7 @@
 
             <div class="mt-8 flex flex-wrap gap-4">
                 <a href="{{ route('menu') }}" class="coffee-button-primary">Lihat Menu</a>
-                <a href="{{ route('gallery') }}" class="coffee-button-secondary">Jelajahi Galeri</a>
+                <a href="{{ route('gallery') }}" class="coffee-button-secondary">Jelajahi Galeri Kami</a>
                 <a href="{{ route('contact') }}" class="coffee-button-secondary">Reservasi</a>
             </div>
 
